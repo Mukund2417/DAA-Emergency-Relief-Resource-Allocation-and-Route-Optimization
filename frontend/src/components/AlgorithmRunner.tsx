@@ -1,0 +1,12 @@
+import { useState } from 'react'
+import { Play } from 'lucide-react'
+import { api } from '../services/api'
+import { Button, Card, ErrorNotice } from './ui'
+
+type Props={title:string;description:string;endpoint:string;sample:unknown;sampleLabel:string;maxHeight?:number;scenarioId?:number;compareEndpoint?:string;compareLabel?:string}
+export function AlgorithmRunner({title,description,endpoint,sample,sampleLabel,maxHeight=260,scenarioId,compareEndpoint,compareLabel='Compare approaches'}:Props){
+ const [input,setInput]=useState(JSON.stringify(sample,null,2)); const [result,setResult]=useState<unknown>(); const [error,setError]=useState(''); const [busy,setBusy]=useState(false)
+ async function run(){setBusy(true);setError('');setResult(undefined);try{setResult(await api(endpoint,{method:'POST',body:JSON.stringify({scenario_id:scenarioId??null,input:JSON.parse(input)})}))}catch(e){setError(e instanceof Error?e.message:'Could not run algorithm')}finally{setBusy(false)}}
+ async function compareRun(){setBusy(true);setError('');setResult(undefined);try{setResult(await api(compareEndpoint!,{method:'POST',body:JSON.stringify({scenario_id:scenarioId??null,input:JSON.parse(input)})}))}catch(e){setError(e instanceof Error?e.message:'Could not compare algorithms')}finally{setBusy(false)}}
+ return <div className="runner-grid"><div className="runner-input"><div className="panel-heading"><div><h2>{title}</h2><p>{description}</p></div><span className="sample-tag">{sampleLabel}</span></div><textarea aria-label={`${title} input JSON`} className="json-editor" style={{minHeight:maxHeight}} value={input} onChange={e=>setInput(e.target.value)} spellCheck={false}/><div className="runner-actions"><span>JSON input · results are saved to run history</span><div className="button-row"><Button onClick={run} disabled={busy}><Play size={15}/>{busy?'Running…':'Run algorithm'}</Button>{compareEndpoint&&<Button className="button-secondary" onClick={compareRun} disabled={busy}>{compareLabel}</Button>}</div></div>{error&&<ErrorNotice error={error}/>}</div><Card className="output-card"><div className="panel-heading"><div><h2>Execution result</h2><p>Returned by the Python algorithm module</p></div></div>{result?<pre className="result-json">{JSON.stringify(result,null,2)}</pre>:<div className="empty compact"><span className="empty-mark">↳</span><strong>Ready when you are</strong><p>Run the algorithm to see its output and measured execution time.</p></div>}</Card></div>
+}
